@@ -50,6 +50,7 @@
       <label for="interests">Enter your interests (comma separated):</label>
       <input type="text" id="interests" placeholder="e.g. tech, art, sustainability">
       <button id="generate">Generate Ideas</button>
+      <button id="combine">Combine Selected Ideas</button>
     </div>
   </div>
   <svg width="960" height="600"></svg>
@@ -58,6 +59,7 @@
     // Global variables
     let selectedNodes = []; // Stores ideas the user selects
     let nodeIdCounter = 0;  // Unique ID counter for nodes
+    let combinationCounter = 0; // Tracks combined idea groups
 
     // The root node of our mind map
     let rootData = {
@@ -125,6 +127,51 @@ Format each idea as a short title followed by a colon and a brief description, e
           { name: "Smart " + baseText + " Solutions", children: [] },
           { name: baseText + " 2.0", children: [] }
         ];
+      }
+    }
+
+    /**
+     * Uses the selected ideas to generate new combined concepts via OpenAI.
+     * @returns {Promise<Array>} New idea objects created from the selection.
+     */
+    async function generateCombinedIdeas() {
+      if (selectedNodes.length < 2) {
+        alert("Select at least two ideas to combine.");
+        return [];
+      }
+
+      const OPENAI_API_KEY = document.getElementById("apikey").value.trim();
+      if (!OPENAI_API_KEY) {
+        alert("Please enter your OpenAI API key.");
+        return [];
+      }
+
+      const promptText = `Combine the following ideas into three innovative business concepts: ${selectedNodes.join(', ')}. Format each idea as a short title followed by a colon and a brief description on a new line.`;
+
+      try {
+        const response = await fetch("https://api.openai.com/v1/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "text-davinci-003",
+            prompt: promptText,
+            max_tokens: 150,
+            temperature: 0.7,
+            n: 1
+          })
+        });
+
+        const data = await response.json();
+        let text = data.choices[0].text.trim();
+        let lines = text.split("\n").filter(line => line.trim() !== "");
+        let ideas = lines.map(line => ({ name: line, children: [] }));
+        return ideas;
+      } catch (error) {
+        console.error("Error generating combined ideas:", error);
+        return [];
       }
     }
 
@@ -236,6 +283,21 @@ Format each idea as a short title followed by a colon and a brief description, e
       // Use AI to generate initial ideas based on the provided interests.
       rootData.children = await generateAIideas(interests);
       update(rootData);
+    });
+
+    // Generate new concepts by combining the user's selected ideas.
+    document.getElementById("combine").addEventListener("click", async function() {
+      const newIdeas = await generateCombinedIdeas();
+      if (newIdeas.length > 0) {
+        combinationCounter += 1;
+        rootData.children.push({
+          name: `Combination ${combinationCounter}`,
+          children: newIdeas
+        });
+        // Clear selections once used.
+        selectedNodes = [];
+        update(rootData);
+      }
     });
   </script>
 </body>
