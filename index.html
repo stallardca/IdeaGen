@@ -15,6 +15,10 @@
       background: #f5f7fb;
       color: #1f2a44;
     }
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
     header {
       max-width: 980px;
       margin: 0 auto 20px;
@@ -29,7 +33,6 @@
       color: #4b5a78;
     }
     #controls {
-      max-width: 980px;
       margin: 20px auto;
       background: #ffffff;
       padding: 16px 20px;
@@ -39,6 +42,47 @@
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 12px;
       align-items: center;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+      margin-top: 16px;
+    }
+    .panel {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 12px 24px rgba(31, 42, 68, 0.08);
+    }
+    .panel h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+    .panel p {
+      font-size: 13px;
+      color: #5b6a89;
+      margin-bottom: 12px;
+    }
+    .panel .idea-card {
+      background: #f6f8ff;
+      border: 1px solid #d6dce8;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+      min-height: 120px;
+      white-space: pre-wrap;
+    }
+    .panel .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .panel .actions button {
+      width: auto;
+      flex: 1;
     }
     label {
       font-size: 12px;
@@ -71,14 +115,12 @@
       box-shadow: 0 6px 12px rgba(45, 108, 223, 0.24);
     }
     #hint {
-      max-width: 980px;
       margin: 0 auto 10px;
       text-align: center;
       font-size: 13px;
       color: #5b6a89;
     }
     #status {
-      max-width: 980px;
       margin: 0 auto 16px;
       text-align: center;
       font-size: 13px;
@@ -88,19 +130,29 @@
     #status.error {
       color: #c0392b;
     }
-    svg {
-      width: 100%;
-      height: 640px;
+    .canvas {
       background: #ffffff;
       border-radius: 16px;
       box-shadow: 0 12px 24px rgba(31, 42, 68, 0.08);
+      overflow: auto;
+      border: 1px solid #e6ebf4;
+      position: relative;
     }
-    .node circle {
+    svg {
+      width: 1400px;
+      height: 720px;
+      display: block;
+      background: radial-gradient(circle at top left, rgba(45, 108, 223, 0.08), transparent 45%);
+    }
+    .node rect {
       fill: #ffffff;
       stroke: #2d6cdf;
-      stroke-width: 2px;
+      stroke-width: 1.5px;
+      rx: 10;
+      ry: 10;
+      filter: drop-shadow(0 6px 12px rgba(31, 42, 68, 0.12));
     }
-    .node.active circle {
+    .node.active rect {
       fill: #2d6cdf;
     }
     .node text {
@@ -116,30 +168,70 @@
       stroke: #d0d7e6;
       stroke-width: 2px;
     }
+    .node .pill {
+      fill: #eaf0ff;
+      stroke: none;
+    }
+    .node.active .pill {
+      fill: rgba(255, 255, 255, 0.22);
+    }
+    .node .depth-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      fill: #5872ad;
+    }
+    .node.active .depth-label {
+      fill: rgba(255, 255, 255, 0.7);
+    }
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      svg {
+        width: 1100px;
+        height: 680px;
+      }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Idea Evolution Tree</h1>
-    <p>Generate seed ideas, click one you love, and watch it evolve into new business concepts.</p>
-  </header>
-  <div id="controls">
-    <div>
-      <label for="apikey">OpenAI API Key</label>
-      <input type="password" id="apikey" placeholder="sk-...">
+  <div class="page">
+    <header>
+      <h1>Idea Evolution Tree</h1>
+      <p>Generate seed ideas, click one you love, and watch it evolve into new business concepts.</p>
+    </header>
+    <div id="controls">
+      <div>
+        <label for="apikey">OpenAI API Key</label>
+        <input type="password" id="apikey" placeholder="sk-...">
+      </div>
+      <div>
+        <label for="interests">Your interests</label>
+        <input type="text" id="interests" placeholder="e.g. wellness, fintech, pets">
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button id="generate">Generate Seed Ideas</button>
+      </div>
     </div>
-    <div>
-      <label for="interests">Your interests</label>
-      <input type="text" id="interests" placeholder="e.g. wellness, fintech, pets">
-    </div>
-    <div>
-      <label>&nbsp;</label>
-      <button id="generate">Generate Seed Ideas</button>
+    <div id="hint">Tip: click an idea node to generate its next evolution.</div>
+    <div id="status"></div>
+    <div class="layout">
+      <aside class="panel">
+        <h3>Selected Idea</h3>
+        <p>Click any node to see the full idea, copy it, or evolve it further.</p>
+        <div class="idea-card" id="idea-detail">Select an idea to see details here.</div>
+        <div class="actions">
+          <button id="copy-idea" type="button">Copy Idea</button>
+          <button id="evolve-idea" type="button">Evolve Idea</button>
+        </div>
+      </aside>
+      <div class="canvas" aria-label="Idea tree canvas">
+        <svg></svg>
+      </div>
     </div>
   </div>
-  <div id="hint">Tip: click an idea node to generate its next evolution.</div>
-  <div id="status"></div>
-  <svg></svg>
 
   <script>
     let nodeIdCounter = 0;
@@ -154,16 +246,49 @@
           width = parseFloat(svg.style("width")),
           height = parseFloat(svg.style("height"));
 
-    const g = svg.append("g").attr("transform", "translate(40,0)");
-    const tree = d3.tree().size([height, width - 200]);
+    const g = svg.append("g");
+    const tree = d3.tree().size([height - 80, width - 240]);
 
     let root = d3.hierarchy(rootData, d => d.children);
 
     const statusEl = document.getElementById("status");
+    const ideaDetailEl = document.getElementById("idea-detail");
+    const copyIdeaBtn = document.getElementById("copy-idea");
+    const evolveIdeaBtn = document.getElementById("evolve-idea");
+    let selectedNode = null;
 
     function setStatus(message, isError = false) {
       statusEl.textContent = message;
       statusEl.classList.toggle("error", isError);
+    }
+
+    function formatDepthLabel(depth) {
+      if (depth === 0) return "Root";
+      if (depth === 1) return "Seed";
+      return `Level ${depth}`;
+    }
+
+    function updateIdeaDetail(node) {
+      if (!node) {
+        ideaDetailEl.textContent = "Select an idea to see details here.";
+        return;
+      }
+      ideaDetailEl.textContent = node.data.name;
+    }
+
+    async function evolveSelected() {
+      if (!selectedNode) {
+        setStatus("Select an idea node to evolve.", true);
+        return;
+      }
+      setStatus("Generating next evolution...");
+      if (!selectedNode.data.children || selectedNode.data.children.length === 0) {
+        selectedNode.data.children = await fetchIdeas(selectedNode.data.name);
+      }
+      update(selectedNode);
+      if (selectedNode.data.children?.length) {
+        setStatus("Evolution ready! Scroll to explore new ideas.");
+      }
     }
 
     function parseIdeas(raw) {
@@ -261,19 +386,62 @@
                           .attr("transform", d => `translate(${d.y},${d.x})`)
                           .on("click", async function(event, d) {
                             activeNodeId = d.id;
+                            selectedNode = d;
+                            updateIdeaDetail(d);
                             if (!d.data.children || d.data.children.length === 0) {
                               d.data.children = await fetchIdeas(d.data.name);
                             }
                             update(d);
                           });
 
-      nodeEnter.append("circle").attr("r", 12);
+      nodeEnter.append("rect")
+               .attr("x", -90)
+               .attr("y", -26)
+               .attr("width", 180)
+               .attr("height", 52);
+
+      nodeEnter.append("rect")
+               .attr("class", "pill")
+               .attr("x", -72)
+               .attr("y", -20)
+               .attr("width", 60)
+               .attr("height", 16)
+               .attr("rx", 8)
+               .attr("ry", 8);
+
+      nodeEnter.append("text")
+               .attr("class", "depth-label")
+               .attr("x", -66)
+               .attr("y", -8)
+               .text(d => formatDepthLabel(d.depth));
 
       nodeEnter.append("text")
                .attr("dy", 4)
-               .attr("x", d => d.children ? -16 : 16)
-               .style("text-anchor", d => d.children ? "end" : "start")
-               .text(d => d.data.name);
+               .attr("x", -78)
+               .style("text-anchor", "start")
+               .each(function(d) {
+                 const text = d3.select(this);
+                 const words = d.data.name.split(/\s+/).slice(0, 20);
+                 let line = [];
+                 let lineNumber = 0;
+                 const lineHeight = 14;
+                 const maxWidth = 155;
+                 let tspan = text.append("tspan").attr("x", -78).attr("y", 6);
+                 words.forEach(word => {
+                   line.push(word);
+                   tspan.text(line.join(" "));
+                   if (tspan.node().getComputedTextLength() > maxWidth) {
+                     line.pop();
+                     tspan.text(line.join(" "));
+                     line = [word];
+                     lineNumber += 1;
+                     tspan = text.append("tspan")
+                       .attr("x", -78)
+                       .attr("y", 6 + lineNumber * lineHeight)
+                       .text(word);
+                   }
+                 });
+               });
 
       const nodeUpdate = nodeEnter.merge(node);
       nodeUpdate
@@ -311,17 +479,43 @@
 
     update(rootData);
 
+    const zoom = d3.zoom()
+      .scaleExtent([0.6, 1.6])
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
+      });
+
+    svg.call(zoom).call(zoom.transform, d3.zoomIdentity.translate(80, 40));
+
     document.getElementById("generate").addEventListener("click", async function() {
       setStatus("Generating ideas...");
       const interests = document.getElementById("interests").value || "emerging consumer trends";
       const ideas = await fetchIdeas(interests);
       rootData.children = ideas;
+      selectedNode = null;
+      updateIdeaDetail(null);
       if (ideas.length > 0) {
         setStatus("Ideas generated! Click any node to evolve it.");
       }
       activeNodeId = null;
       update(rootData);
     });
+
+    copyIdeaBtn.addEventListener("click", async function() {
+      if (!selectedNode) {
+        setStatus("Select an idea to copy.", true);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(selectedNode.data.name);
+        setStatus("Idea copied to clipboard!");
+      } catch (error) {
+        console.error("Copy failed", error);
+        setStatus("Copy failed. Try selecting and copying manually.", true);
+      }
+    });
+
+    evolveIdeaBtn.addEventListener("click", evolveSelected);
   </script>
 </body>
 </html>
