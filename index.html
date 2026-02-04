@@ -147,11 +147,82 @@
 
     let root = d3.hierarchy(rootData, d => d.children);
 
+    const ideaLibrary = {
+      audiences: [
+        "busy parents",
+        "remote teams",
+        "solo entrepreneurs",
+        "local retailers",
+        "fitness enthusiasts",
+        "college students",
+        "travelers",
+        "healthcare clinics"
+      ],
+      valueProps: [
+        "save time",
+        "cut costs",
+        "reduce stress",
+        "unlock new revenue",
+        "improve outcomes",
+        "simplify workflows",
+        "boost engagement",
+        "increase retention"
+      ],
+      deliveryModels: [
+        "subscription platform",
+        "marketplace",
+        "AI assistant",
+        "community + toolkit",
+        "mobile-first service",
+        "hardware-enabled service",
+        "B2B dashboard",
+        "white-label solution"
+      ],
+      differentiators: [
+        "real-time insights",
+        "personalized plans",
+        "instant onboarding",
+        "verified experts",
+        "gamified milestones",
+        "automated compliance",
+        "peer benchmarking",
+        "on-demand matching"
+      ]
+    };
+
+    function parseInterests(input) {
+      return input
+        .split(/[,\n]/)
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+
+    function pickRandom(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function generateLocalIdeas(seed) {
+      const interests = parseInterests(seed);
+      const themes = interests.length ? interests : ["emerging consumer trends"];
+      const ideas = new Set();
+
+      while (ideas.size < 3) {
+        const theme = pickRandom(themes);
+        const audience = pickRandom(ideaLibrary.audiences);
+        const valueProp = pickRandom(ideaLibrary.valueProps);
+        const model = pickRandom(ideaLibrary.deliveryModels);
+        const differentiator = pickRandom(ideaLibrary.differentiators);
+        const idea = `${model} for ${audience} in ${theme} that helps them ${valueProp} with ${differentiator}.`;
+        ideas.add(idea);
+      }
+
+      return Array.from(ideas).map(text => ({ name: text, children: [] }));
+    }
+
     async function fetchIdeas(promptSeed) {
       const OPENAI_API_KEY = document.getElementById("apikey").value.trim();
       if (!OPENAI_API_KEY) {
-        alert("Please enter your OpenAI API key.");
-        return [];
+        return generateLocalIdeas(promptSeed);
       }
 
       const prompt = `You are a business ideation assistant. Create three short, distinct business ideas based on: "${promptSeed}". Respond as JSON array of strings.`;
@@ -177,14 +248,13 @@
         const data = await response.json();
         const raw = data.choices?.[0]?.message?.content || "[]";
         const ideas = JSON.parse(raw);
+        if (!Array.isArray(ideas) || ideas.length === 0) {
+          return generateLocalIdeas(promptSeed);
+        }
         return ideas.map(text => ({ name: text, children: [] }));
       } catch (error) {
         console.error("Error generating AI ideas:", error);
-        return [
-          { name: `${promptSeed} Studio`, children: [] },
-          { name: `${promptSeed} Concierge`, children: [] },
-          { name: `${promptSeed} Marketplace`, children: [] }
-        ];
+        return generateLocalIdeas(promptSeed);
       }
     }
 
